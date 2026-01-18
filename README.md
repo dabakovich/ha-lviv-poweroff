@@ -4,6 +4,10 @@
 
 # ⚡️ Home Assistant Lviv PowerOff
 
+> **This repository is a fork of the [original library](https://github.com/tsdaemon/ha-lviv-poweroff)** with the following improvements:
+> - Uses the official Lvivoblenergo website ([poweron.loe.lviv.ua](https://poweron.loe.lviv.ua/)) to scrape the most up-to-date power outage data
+> - Fixed a bug where minutes were not recorded in the calendar — they were truncated, showing only hours. This was critical since outage schedules can start or end at half hours (e.g., 05:00-08:30)
+
 An integration for electricity shutdown schedules of [LvivOblEnergo](lvivoblenergo). Based on data from [EnergyUA][energyua].
 
 This integration for [Home Assistant][home-assistant] provides information about planned electricity shutdowns of [LvivOblEnergo](lvivoblenergo) in Lvivska oblast:
