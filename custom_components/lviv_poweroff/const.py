@@ -6,7 +6,7 @@ DOMAIN = "lviv_poweroff"
 
 POWEROFF_GROUP_CONF = "poweroff_group"
 
-UPDATE_INTERVAL = 600
+UPDATE_INTERVAL = 60
 
 STATE_ON = "Power ON"
 STATE_OFF = "Power OFF"

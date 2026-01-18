@@ -11,6 +11,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import STATE_OFF, STATE_ON
 from .coordinator import LvivPowerOffCoordinator
@@ -62,13 +63,14 @@ async def async_setup_entry(
     async_add_entities(LvivPowerOffSensor(coordinator, description) for description in SENSOR_TYPES)
 
 
-class LvivPowerOffSensor(SensorEntity):
+class LvivPowerOffSensor(CoordinatorEntity[LvivPowerOffCoordinator], SensorEntity):
     def __init__(
         self,
         coordinator: LvivPowerOffCoordinator,
         entity_description: LvivPowerOffSensorDescription,
     ) -> None:
         """Initialize the sensor."""
+        super().__init__(coordinator)
         self.coordinator = coordinator
         self.entity_description = entity_description
         self._attr_unique_id = (

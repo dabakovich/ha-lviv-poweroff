@@ -9,6 +9,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from .coordinator import LvivPowerOffCoordinator
 
 LOGGER = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ async def async_setup_entry(
     async_add_entities([LvivPowerOffCalendar(coordinator)])
 
 
-class LvivPowerOffCalendar(CalendarEntity):
+class LvivPowerOffCalendar(CoordinatorEntity[LvivPowerOffCoordinator], CalendarEntity):
     """Implementation of calendar entity."""
 
     def __init__(
@@ -33,7 +35,7 @@ class LvivPowerOffCalendar(CalendarEntity):
         coordinator: LvivPowerOffCoordinator,
     ) -> None:
         """Initialize the LvivPowerOffCoordinator entity."""
-        super().__init__()
+        super().__init__(coordinator)
         self.coordinator = coordinator
         self.entity_description = CalendarEntityDescription(
             key="calendar",
