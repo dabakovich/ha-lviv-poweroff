@@ -48,6 +48,7 @@ class LvivPowerOffCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(msg) from err
 
     async def _fetch_periods(self) -> None:
+        LOGGER.debug("Fetching power off periods for group %s", self.group)
         self.periods = await self.api.get_power_off_periods()
 
     def _get_next_power_change_dt(self, on: bool) -> datetime | None:
