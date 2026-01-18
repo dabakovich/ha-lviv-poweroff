@@ -10,7 +10,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, POWEROFF_GROUP_CONF, UPDATE_INTERVAL, PowerOffGroup, STATE_ON, STATE_OFF
-from .energyua_scrapper import EnergyUaScrapper
+from .loe_scrapper import LoeScrapper
 from .entities import PowerOffPeriod
 
 LOGGER = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class LvivPowerOffCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.config_entry = config_entry
         self.group: PowerOffGroup = config_entry.data[POWEROFF_GROUP_CONF]
-        self.api = EnergyUaScrapper(self.group)
+        self.api = LoeScrapper(self.group)
         self.periods: list[PowerOffPeriod] = []
 
     async def _async_update_data(self) -> dict:

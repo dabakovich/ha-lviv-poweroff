@@ -1,6 +1,5 @@
 """Provides classes for scraping power off periods from the Energy UA website."""
 
-import re
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -9,7 +8,10 @@ from .const import PowerOffGroup
 from .entities import PowerOffPeriod
 
 URL = "https://lviv.energy-ua.info/grupa/{}"
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
+
 
 class EnergyUaScrapper:
     """Class for scraping power off periods from the Energy UA website."""
@@ -35,7 +37,7 @@ class EnergyUaScrapper:
         merged_periods = [periods[0]]
         for current in periods[1:]:
             last = merged_periods[-1]
-            if current.start <= last.end:  # Overlapping or contiguous periods
+            if current.start <= last.end:  # type: ignore[operator] # Overlapping or contiguous periods
                 last.end = max(last.end, current.end)
                 continue
             merged_periods.append(current)
@@ -73,5 +75,5 @@ class EnergyUaScrapper:
         start_hour = item.find("i", class_="hour_info_from")
         end_hour = item.find("i", class_="hour_info_to")
         if start_hour and end_hour:
-            return int(start_hour.text.split(':')[0]), int(end_hour.text.split(':')[0])
+            return int(start_hour.text.split(":")[0]), int(end_hour.text.split(":")[0])
         raise ValueError(f"Time period not found in the input string: {item.text}")

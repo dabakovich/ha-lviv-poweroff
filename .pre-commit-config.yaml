@@ -17,6 +17,8 @@ repos:
   hooks:
   - id: mypy
     name: mypy
-    entry: mypy
+    entry: ./.venv/bin/mypy
     language: system
     types: [python]
+    args: [--explicit-package-bases, custom_components, tests]
+    pass_filenames: false

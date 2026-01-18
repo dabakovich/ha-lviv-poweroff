@@ -3,10 +3,9 @@
 import datetime
 import logging
 
-from homeassistant.components.calendar import CalendarEntity, CalendarEvent
+from homeassistant.components.calendar import CalendarEntity, CalendarEvent, CalendarEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
@@ -36,14 +35,12 @@ class LvivPowerOffCalendar(CalendarEntity):
         """Initialize the LvivPowerOffCoordinator entity."""
         super().__init__()
         self.coordinator = coordinator
-        self.entity_description = EntityDescription(
+        self.entity_description = CalendarEntityDescription(
             key="calendar",
             name="Lviv PowerOff Calendar",
         )
         self._attr_unique_id = (
-            f"{coordinator.config_entry.entry_id}-"
-            f"{coordinator.group}-"
-            f"{self.entity_description.key}"
+            f"{coordinator.config_entry.entry_id}-" f"{coordinator.group}-" f"{self.entity_description.key}"
         )
 
     @property

@@ -3,8 +3,8 @@ from pathlib import Path
 from aioresponses import aioresponses
 import pytest
 
-from lviv_poweroff.energyua_scrapper import EnergyUaScrapper
-from lviv_poweroff.entities import PowerOffPeriod
+from custom_components.lviv_poweroff.energyua_scrapper import EnergyUaScrapper
+from custom_components.lviv_poweroff.entities import PowerOffPeriod
 
 
 def load_energyua_page(test_page: str) -> str:
