@@ -54,7 +54,8 @@ class LvivPowerOffCoordinator(DataUpdateCoordinator):
 
         if not periods:
             LOGGER.debug("Empty periods received, keeping last valid periods")
-            self.periods = self._last_valid_periods
+            if self._last_valid_periods:
+                self.periods = self._last_valid_periods
             return
 
         self.periods = periods
