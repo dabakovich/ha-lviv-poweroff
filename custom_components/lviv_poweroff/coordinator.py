@@ -36,6 +36,7 @@ class LvivPowerOffCoordinator(DataUpdateCoordinator):
         self.group: PowerOffGroup = config_entry.data[POWEROFF_GROUP_CONF]
         self.api = LoeScrapper(self.group)
         self.periods: list[PowerOffPeriod] = []
+        self._last_valid_periods: list[PowerOffPeriod] = []
 
     async def _async_update_data(self) -> dict:
         """Fetch power off periods from scrapper."""
@@ -49,7 +50,16 @@ class LvivPowerOffCoordinator(DataUpdateCoordinator):
 
     async def _fetch_periods(self) -> None:
         LOGGER.debug("Fetching power off periods for group %s", self.group)
-        self.periods = await self.api.get_power_off_periods()
+        periods = await self.api.get_power_off_periods()
+
+        if not periods:
+            LOGGER.debug("Empty periods received, keeping last valid periods")
+            self.periods = self._last_valid_periods
+            return
+
+        self.periods = periods
+        self._last_valid_periods = periods
+
 
     def _get_next_power_change_dt(self, on: bool) -> datetime | None:
         """Get the next power on/off."""
