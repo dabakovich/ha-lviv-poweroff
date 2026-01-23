@@ -49,6 +49,13 @@ SENSOR_TYPES: tuple[LvivPowerOffSensorDescription, ...] = (
         name="Next power on",
         val_func=lambda coordinator: coordinator.next_poweron,
     ),
+    LvivPowerOffSensorDescription(
+        key="lviv_poweroff_last_update",
+        icon="mdi:update",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        name="Lviv PowerOff Last Update",
+        val_func=lambda coordinator: coordinator.last_success_update,
+    ),
 )
 
 
@@ -76,8 +83,15 @@ class LvivPowerOffSensor(CoordinatorEntity[LvivPowerOffCoordinator], SensorEntit
         self._attr_unique_id = (
             f"{coordinator.config_entry.entry_id}-" f"{coordinator.group}-" f"{self.entity_description.key}"
         )
+        self._last_value = None
 
     @property
-    def native_value(self) -> str | None:
-        """Return the state of the sensor."""
-        return self.entity_description.val_func(self.coordinator)  # type: ignore
+    def native_value(self):
+        value = self.entity_description.val_func(self.coordinator)
+
+        if value is None:
+            return self._last_value
+
+        self._last_value = value
+        return value
+
