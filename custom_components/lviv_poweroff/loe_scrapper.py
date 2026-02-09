@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import aiohttp
 from bs4 import BeautifulSoup
 
-from .const import PowerOffGroup
 from .entities import PowerOffPeriod
 
 URL = "https://api.loe.lviv.ua/api/menus?page=1&type=photo-grafic"
@@ -22,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 class LoeScrapper:
     """Class for scraping power off periods from the Lvivoblenergo API."""
 
-    def __init__(self, group: PowerOffGroup) -> None:
+    def __init__(self, group: str) -> None:
         """Initialize the LoeScrapper object."""
         self.group = group
 
@@ -50,12 +49,15 @@ class LoeScrapper:
                     return []
 
                 data = await response.json()
-                if not data or "hydra:member" not in data or not data["hydra:member"]:
+                menu = None
+
+                if "hydra:member" in data and data["hydra:member"]:
+                    menu = data["hydra:member"][0]
+                elif "menuItems" in data[0]:
+                    menu = data[0]
+                else:
                     _LOGGER.error("Invalid API response structure")
                     return []
-
-                # Get the main menu object
-                menu = data["hydra:member"][0]
 
                 raw_periods = []
 
@@ -64,7 +66,7 @@ class LoeScrapper:
 
                 # Регулярний вираз для пошуку конкретної групи
                 # Шукаємо "Група <значення_енуму>. Електроенергії немає з <часи>."
-                group_pattern = rf"Група {re.escape(self.group.value)}\. Електроенергії немає з (.*?)\."
+                group_pattern = rf"Група {re.escape(self.group)}\. Електроенергії немає з (.*?)\."
                 date_pattern = re.compile(r"на (\d{2}\.\d{2}\.\d{4})")
 
                 for item in items_to_process:
