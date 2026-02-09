@@ -2,6 +2,7 @@ import asyncio
 import logging
 import aiohttp
 
+from homeassistant.util import dt as dt_util
 from custom_components.lviv_poweroff.loe_scrapper import LoeScrapper  # Замініть на правильний шлях
 from custom_components.lviv_poweroff.const import PowerOffGroup
 # from your_module.entities import PowerOffPeriod
@@ -28,7 +29,7 @@ async def main():
     # Виберіть вашу групу
     group = PowerOffGroup.OneOne  # Змініть на вашу групу
 
-    scraper = LoeScrapper(group=group.value)
+    scraper = LoeScrapper(group=group.value, time_zone=dt_util.get_time_zone("Europe/Kyiv"))
 
     # Перевірка API
     if await scraper.validate():

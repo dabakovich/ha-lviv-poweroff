@@ -2,7 +2,7 @@
 
 import aiohttp
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, _TzInfo
 from .const import PowerOffGroup
 from .entities import PowerOffPeriod
 
@@ -15,9 +15,10 @@ USER_AGENT = (
 class EnergyUaScrapper:
     """Class for scraping power off periods from the Energy UA website."""
 
-    def __init__(self, group: PowerOffGroup) -> None:
+    def __init__(self, group: PowerOffGroup, tzinfo: _TzInfo) -> None:
         """Initialize the EnergyUaScrapper object."""
         self.group = group
+        self.tzinfo = tzinfo
 
     async def validate(self) -> bool:
         async with (
@@ -61,8 +62,12 @@ class EnergyUaScrapper:
                 for item in scale_hours_el:
                     if item.find("span", class_="hour_active"):
                         start_hour, end_hour = self._parse_item(item)
-                        start_datetime = datetime.combine(today, datetime.min.time().replace(hour=start_hour))
-                        end_datetime = datetime.combine(today, datetime.min.time().replace(hour=end_hour))
+                        start_datetime = datetime.combine(today, datetime.min.time().replace(hour=start_hour)).replace(
+                            tzinfo=self.tzinfo
+                        )
+                        end_datetime = datetime.combine(today, datetime.min.time().replace(hour=end_hour)).replace(
+                            tzinfo=self.tzinfo
+                        )
                         results.append(PowerOffPeriod(start_datetime, end_datetime))
                 results = self.merge_periods(results)
 
@@ -74,8 +79,12 @@ class EnergyUaScrapper:
                 for item in scale_hours_el_tomorrow:
                     if item.find("span", class_="hour_active"):
                         start_hour, end_hour = self._parse_item(item)
-                        start_datetime = datetime.combine(tomorrow, datetime.min.time().replace(hour=start_hour))
-                        end_datetime = datetime.combine(tomorrow, datetime.min.time().replace(hour=end_hour))
+                        start_datetime = datetime.combine(
+                            tomorrow, datetime.min.time().replace(hour=start_hour)
+                        ).replace(tzinfo=self.tzinfo)
+                        end_datetime = datetime.combine(tomorrow, datetime.min.time().replace(hour=end_hour)).replace(
+                            tzinfo=self.tzinfo
+                        )
                         tomorrow_results.append(PowerOffPeriod(start_datetime, end_datetime))
                 results += self.merge_periods(tomorrow_results)
 

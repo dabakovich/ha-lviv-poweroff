@@ -7,6 +7,8 @@ import pytest
 from custom_components.lviv_poweroff.energyua_scrapper import EnergyUaScrapper
 from custom_components.lviv_poweroff.entities import PowerOffPeriod
 
+from homeassistant.util import dt as dt_util
+
 
 def load_energyua_page(test_page: str) -> str:
     test_file = Path(__file__).parent / test_page
@@ -91,7 +93,7 @@ async def test_energyua_scrapper(group, test_page, expected_result) -> None:
     with aioresponses() as mock:
         mock.get(f"https://lviv.energy-ua.info/grupa/{group}", body=load_energyua_page(test_page))
         # When scrapper is called for power-off periods
-        scrapper = EnergyUaScrapper(group)
+        scrapper = EnergyUaScrapper(group, dt_util.get_default_time_zone())
         poweroffs = await scrapper.get_power_off_periods()
 
     # Then the power-off periods are extracted correctly

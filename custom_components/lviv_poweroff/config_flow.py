@@ -10,6 +10,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, POWEROFF_GROUP_CONF, PowerOffGroup
 from .loe_scrapper import LoeScrapper
@@ -28,7 +29,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
-    scrapper = LoeScrapper(data[POWEROFF_GROUP_CONF])
+    scrapper = LoeScrapper(data[POWEROFF_GROUP_CONF], dt_util.get_default_time_zone())
 
     if not await scrapper.validate():
         raise CannotConnect

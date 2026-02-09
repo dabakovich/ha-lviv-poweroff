@@ -2,7 +2,7 @@
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, _TzInfo
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -21,9 +21,10 @@ _LOGGER = logging.getLogger(__name__)
 class LoeScrapper:
     """Class for scraping power off periods from the Lvivoblenergo API."""
 
-    def __init__(self, group: str) -> None:
+    def __init__(self, group: str, tzinfo: _TzInfo) -> None:
         """Initialize the LoeScrapper object."""
         self.group = group
+        self.tzinfo = tzinfo
 
     async def validate(self) -> bool:
         """Validate that we can connect to the API."""
@@ -89,15 +90,19 @@ class LoeScrapper:
                             if len(times) == 2:
                                 start_str, end_str = times
 
-                                start_dt = datetime.strptime(f"{date_str} {start_str}", "%d.%m.%Y %H:%M")
+                                start_dt = datetime.strptime(f"{date_str} {start_str}", "%d.%m.%Y %H:%M").replace(
+                                    tzinfo=self.tzinfo
+                                )
 
                                 # Обробка "24:00": перетворюємо на 00:00 наступного дня
                                 if end_str == "24:00":
-                                    end_dt = datetime.strptime(f"{date_str} 00:00", "%d.%m.%Y %H:%M") + timedelta(
-                                        days=1
-                                    )
+                                    end_dt = datetime.strptime(f"{date_str} 00:00", "%d.%m.%Y %H:%M").replace(
+                                        tzinfo=self.tzinfo
+                                    ) + timedelta(days=1)
                                 else:
-                                    end_dt = datetime.strptime(f"{date_str} {end_str}", "%d.%m.%Y %H:%M")
+                                    end_dt = datetime.strptime(f"{date_str} {end_str}", "%d.%m.%Y %H:%M").replace(
+                                        tzinfo=self.tzinfo
+                                    )
 
                                 raw_periods.append(PowerOffPeriod(start_datetime=start_dt, end_datetime=end_dt))
 

@@ -34,7 +34,7 @@ class LvivPowerOffCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.config_entry = config_entry
         self.group: PowerOffGroup = config_entry.data[POWEROFF_GROUP_CONF]
-        self.api = LoeScrapper(self.group)
+        self.api = LoeScrapper(self.group, dt_util.get_default_time_zone())
         self.periods: list[PowerOffPeriod] = []
 
     async def _async_update_data(self) -> dict:
