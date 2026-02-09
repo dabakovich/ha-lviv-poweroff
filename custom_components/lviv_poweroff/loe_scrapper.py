@@ -2,7 +2,7 @@
 
 import logging
 import re
-from datetime import datetime, timedelta, _TzInfo
+from datetime import datetime, timedelta
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -21,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 class LoeScrapper:
     """Class for scraping power off periods from the Lvivoblenergo API."""
 
-    def __init__(self, group: str, tzinfo: _TzInfo) -> None:
+    def __init__(self, group: str, tzinfo) -> None:
         """Initialize the LoeScrapper object."""
         self.group = group
         self.tzinfo = tzinfo

@@ -2,7 +2,7 @@
 
 import aiohttp
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta, _TzInfo
+from datetime import datetime, timedelta
 from .const import PowerOffGroup
 from .entities import PowerOffPeriod
 
@@ -15,7 +15,7 @@ USER_AGENT = (
 class EnergyUaScrapper:
     """Class for scraping power off periods from the Energy UA website."""
 
-    def __init__(self, group: PowerOffGroup, tzinfo: _TzInfo) -> None:
+    def __init__(self, group: PowerOffGroup, tzinfo) -> None:
         """Initialize the EnergyUaScrapper object."""
         self.group = group
         self.tzinfo = tzinfo
