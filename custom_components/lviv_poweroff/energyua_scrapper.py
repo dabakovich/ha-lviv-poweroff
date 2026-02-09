@@ -1,9 +1,8 @@
 """Provides classes for scraping power off periods from the Energy UA website."""
 
-
 import aiohttp
 from bs4 import BeautifulSoup
-
+from datetime import datetime, timedelta
 from .const import PowerOffGroup
 from .entities import PowerOffPeriod
 
@@ -32,13 +31,14 @@ class EnergyUaScrapper:
         if not periods:
             return []
 
-        periods.sort(key=lambda x: x.start)
-
+        periods.sort(key=lambda x: x.start_datetime)
         merged_periods = [periods[0]]
+
         for current in periods[1:]:
             last = merged_periods[-1]
-            if current.start <= last.end:  # type: ignore[operator] # Overlapping or contiguous periods
-                last.end = max(last.end, current.end)
+            # Overlapping or contiguous periods
+            if current.start_datetime <= last.end_datetime:
+                last.end_datetime = max(last.end_datetime, current.end_datetime)
                 continue
             merged_periods.append(current)
 
@@ -53,20 +53,30 @@ class EnergyUaScrapper:
             soup = BeautifulSoup(content, "html.parser")
             results = []
             scale_hours = soup.find_all("div", class_="scale_hours")
+
+            # Today's schedule
             if len(scale_hours) > 0:
+                today = datetime.now().date()
                 scale_hours_el = scale_hours[0].find_all("div", class_="scale_hours_el")
                 for item in scale_hours_el:
                     if item.find("span", class_="hour_active"):
-                        start, end = self._parse_item(item)
-                        results.append(PowerOffPeriod(start, end, today=True))
+                        start_hour, end_hour = self._parse_item(item)
+                        start_datetime = datetime.combine(today, datetime.min.time().replace(hour=start_hour))
+                        end_datetime = datetime.combine(today, datetime.min.time().replace(hour=end_hour))
+                        results.append(PowerOffPeriod(start_datetime, end_datetime))
                 results = self.merge_periods(results)
+
+            # Tomorrow's schedule
             if len(scale_hours) > 1:
+                tomorrow = datetime.now().date() + timedelta(days=1)
                 tomorrow_results = []
                 scale_hours_el_tomorrow = scale_hours[1].find_all("div", class_="scale_hours_el")
                 for item in scale_hours_el_tomorrow:
                     if item.find("span", class_="hour_active"):
-                        start, end = self._parse_item(item)
-                        tomorrow_results.append(PowerOffPeriod(start, end, today=False))
+                        start_hour, end_hour = self._parse_item(item)
+                        start_datetime = datetime.combine(tomorrow, datetime.min.time().replace(hour=start_hour))
+                        end_datetime = datetime.combine(tomorrow, datetime.min.time().replace(hour=end_hour))
+                        tomorrow_results.append(PowerOffPeriod(start_datetime, end_datetime))
                 results += self.merge_periods(tomorrow_results)
 
             return results

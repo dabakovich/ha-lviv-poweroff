@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime
 
 from aioresponses import aioresponses
 import pytest
@@ -22,24 +23,60 @@ def load_energyua_page(test_page: str) -> str:
             "1.2",
             "energyua_12_page.html",
             [
-                PowerOffPeriod(23, 0, today=True),
-                PowerOffPeriod(0, 2, today=True),
-                PowerOffPeriod(6, 8, today=True),
-                PowerOffPeriod(11, 14, today=True),
-                PowerOffPeriod(16, 20, today=True),
-                PowerOffPeriod(22, 0, today=True),
-                PowerOffPeriod(7, 9, today=False),
-                PowerOffPeriod(19, 21, today=False),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 23, 0),
+                    datetime(2024, 2, 10, 0, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 0, 0),
+                    datetime(2024, 2, 9, 2, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 6, 0),
+                    datetime(2024, 2, 9, 8, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 11, 0),
+                    datetime(2024, 2, 9, 14, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 16, 0),
+                    datetime(2024, 2, 9, 20, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 22, 0),
+                    datetime(2024, 2, 10, 0, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 10, 7, 0),
+                    datetime(2024, 2, 10, 9, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 10, 19, 0),
+                    datetime(2024, 2, 10, 21, 0),
+                ),
             ],
         ),
         (
             "1.1",
             "energyua_11_page.html",
             [
-                PowerOffPeriod(0, 1, today=True),
-                PowerOffPeriod(7, 9, today=True),
-                PowerOffPeriod(14, 15, today=True),
-                PowerOffPeriod(19, 22, today=True),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 0, 0),
+                    datetime(2024, 2, 9, 1, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 7, 0),
+                    datetime(2024, 2, 9, 9, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 14, 0),
+                    datetime(2024, 2, 9, 15, 0),
+                ),
+                PowerOffPeriod(
+                    datetime(2024, 2, 9, 19, 0),
+                    datetime(2024, 2, 9, 22, 0),
+                ),
             ],
         ),
         (

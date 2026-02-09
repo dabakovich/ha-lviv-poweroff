@@ -2,7 +2,7 @@
 
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -57,122 +57,70 @@ class LoeScrapper:
                 # Get the main menu object
                 menu = data["hydra:member"][0]
 
-                # Candidates: the menu object itself and its menuItems
-                candidates: list = []
-                if "menuItems" in menu and isinstance(menu["menuItems"], list):
-                    # Append items in reverse order (newest first)
-                    candidates.extend(reversed(menu["menuItems"]))
+                raw_periods = []
 
-                # Append the menu object itself as the LAST resort?
-                # Actually, based on observation, the Menu object often has the *latest* aggregated data.
-                # So we should probably check it FIRST or treat it as a candidate.
-                # Let's verify: The menu.rawHtml had 18.01.2026. The menuItems might be history.
-                # Prioritize the menu object itself by putting it first in the list to check.
-                candidates.insert(0, menu)
+                # 1. Фільтруємо лише актуальні блоки (Today / Tomorrow)
+                items_to_process = [item for item in menu["menuItems"] if item["name"] in ["Today", "Tomorrow"]]
 
-                results: list[PowerOffPeriod] = []
-                today = datetime.now().date()
-                found_today = False
-                found_tomorrow = False
+                # Регулярний вираз для пошуку конкретної групи
+                # Шукаємо "Група <значення_енуму>. Електроенергії немає з <часи>."
+                group_pattern = rf"Група {re.escape(self.group.value)}\. Електроенергії немає з (.*?)\."
+                date_pattern = re.compile(r"на (\d{2}\.\d{2}\.\d{4})")
 
-                for item in candidates:
-                    if found_today and found_tomorrow:
-                        break
+                for item in items_to_process:
+                    soup = BeautifulSoup(item["rawHtml"], "html.parser")
+                    text = soup.get_text()
 
-                    raw_html = item.get("rawHtml")
-                    if not raw_html:
-                        continue
-
-                    date_match = re.search(r"на (\d{2}\.\d{2}\.\d{4})", raw_html)
+                    # Витягуємо дату з тексту (наприклад, 09.02.2026)
+                    date_match = date_pattern.search(text)
                     if not date_match:
                         continue
+                    date_str = date_match.group(1)
 
-                    try:
-                        item_date = datetime.strptime(date_match.group(1), "%d.%m.%Y").date()
-                    except ValueError:
-                        continue
+                    # Шукаємо рядок з графіком для нашої групи
+                    group_match = re.search(group_pattern, text)
+                    if group_match:
+                        time_ranges = group_match.group(1).split(", ")
 
-                    day_delta = (item_date - today).days
+                        for r in time_ranges:
+                            times = re.findall(r"(\d{2}:\d{2})", r)
+                            if len(times) == 2:
+                                start_str, end_str = times
 
-                    is_today = day_delta == 0
-                    is_tomorrow = day_delta == 1
+                                start_dt = datetime.strptime(f"{date_str} {start_str}", "%d.%m.%Y %H:%M")
 
-                    if is_today and not found_today:
-                        periods = self._parse_html(raw_html)
-                        # Add today flag
-                        for p in periods:
-                            p.today = True
-                        results.extend(periods)
-                        found_today = True
+                                # Обробка "24:00": перетворюємо на 00:00 наступного дня
+                                if end_str == "24:00":
+                                    end_dt = datetime.strptime(f"{date_str} 00:00", "%d.%m.%Y %H:%M") + timedelta(
+                                        days=1
+                                    )
+                                else:
+                                    end_dt = datetime.strptime(f"{date_str} {end_str}", "%d.%m.%Y %H:%M")
 
-                    elif is_tomorrow and not found_tomorrow:
-                        periods = self._parse_html(raw_html)
-                        # Add today (False) flag
-                        for p in periods:
-                            p.today = False
-                        results.extend(periods)
-                        found_tomorrow = True
+                                raw_periods.append(PowerOffPeriod(start_datetime=start_dt, end_datetime=end_dt))
 
-                return self._merge_periods(results)
+                # 2. Сортуємо та об'єднуємо суміжні періоди
+                if not raw_periods:
+                    return []
+
+                raw_periods.sort(key=lambda x: x.start_datetime)
+
+                merged_periods = []
+                current = raw_periods[0]
+
+                for i in range(1, len(raw_periods)):
+                    nxt = raw_periods[i]
+                    # Якщо кінець поточного періоду збігається з початком наступного — зливаємо
+                    if current.end_datetime == nxt.start_datetime:
+                        current.end_datetime = nxt.end_datetime
+                    else:
+                        merged_periods.append(current)
+                        current = nxt
+
+                merged_periods.append(current)
+
+                return merged_periods
 
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.exception("Error fetching power off periods: %s", err)
             return []
-
-    def _parse_html(self, html: str) -> list[PowerOffPeriod]:
-        """Parse HTML content to extract periods for the group."""
-        periods: list[PowerOffPeriod] = []
-        soup = BeautifulSoup(html, "html.parser")
-
-        # Regex to find the group line.
-        # Example: "Група 1.1. Електроенергії немає з 01:00 до 04:30, з 08:00 до 11:30."
-        # We look for paragraphs containing the group name.
-        group_pattern = re.compile(rf"Група {re.escape(self.group)}\.")
-
-        # Find all paragraphs or text nodes
-        paragraphs = soup.find_all("p")
-        for p in paragraphs:
-            text = p.get_text().strip()
-            if group_pattern.search(text):
-                # Found the line for this group
-                if "Електроенергія є" in text:
-                    # No power outages
-                    continue
-
-                # Extract intervals: "з HH:MM до HH:MM"
-                matches = re.findall(r"з (\d{2}:\d{2}) до (\d{2}:\d{2})", text)
-                for start_str, end_str in matches:
-                    try:
-                        start = datetime.strptime(start_str, "%H:%M").time()
-                        end = datetime.strptime(end_str, "%H:%M").time()
-                        periods.append(PowerOffPeriod(start, end, today=True))  # Default to True, corrected in caller
-                    except ValueError:
-                        continue
-
-        return periods
-
-    @staticmethod
-    def _merge_periods(periods: list[PowerOffPeriod]) -> list[PowerOffPeriod]:
-        """Merge overlapping or contiguous periods."""
-        if not periods:
-            return []
-
-        # Separate today and tomorrow periods to merge them separately
-        today_periods = sorted([p for p in periods if p.today], key=lambda x: x.start)
-        tomorrow_periods = sorted([p for p in periods if not p.today], key=lambda x: x.start)
-
-        def merge(p_list):
-            if not p_list:
-                return []
-            merged = [p_list[0]]
-            for current in p_list[1:]:
-                last = merged[-1]
-                # Check for overlap or contiguity
-                # Logic: if current.start <= last.end
-                if current.start <= last.end:
-                    last.end = max(last.end, current.end)
-                else:
-                    merged.append(current)
-            return merged
-
-        return merge(today_periods) + merge(tomorrow_periods)

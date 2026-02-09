@@ -41,7 +41,7 @@ async def main():
         periods = await scrapper.get_power_off_periods()
         print(f"Periods found: {len(periods)}")
         for p in periods:
-            print(f"Start: {p.start}, End: {p.end}, Today: {p.today}")
+            print(f"Start: {p.start_datetime}, End: {p.end_datetime}, Today: {p.today}")
 
 
 if __name__ == "__main__":
